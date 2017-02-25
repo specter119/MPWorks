@@ -16,7 +16,7 @@ from mpworks.workflows.wf_utils import get_block_part
 import numpy as np
 from pymatgen import Composition
 from pymatgen.electronic_structure.bandstructure import BandStructure
-from pymatgen.electronic_structure.boltztrap import BoltztrapRunner, BoltztrapAnalyzer
+from pymatgen.electronic_structure.boltztrap import BoltztrapRunner, BoltztrapAnalyzer, BoltztrapError
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from pymatgen.entries.computed_entries import ComputedEntry
 
@@ -48,11 +48,11 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
                     inside_pf_array = []
                     inside_zt_array = []
                     for tidx, val in enumerate(tensor):
-                            seebeck = d['seebeck_doping'][type][t][didx][tidx]
-                            cond = d['cond_doping'][type][t][didx][tidx]
-                            kappa = d['kappa_doping'][type][t][didx][tidx]
-                            inside_pf_array.append(seebeck*seebeck*cond)
-                            inside_zt_array.append(seebeck*seebeck*cond*t/kappa)
+                        seebeck = d['seebeck_doping'][type][t][didx][tidx]
+                        cond = d['cond_doping'][type][t][didx][tidx]
+                        kappa = d['kappa_doping'][type][t][didx][tidx]
+                        inside_pf_array.append(seebeck * seebeck * cond)
+                        inside_zt_array.append(seebeck * seebeck * cond * t / kappa)
                     outside_pf_array.append(inside_pf_array)
                     outside_zt_array.append(inside_zt_array)
 
@@ -64,60 +64,61 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
     def get_eigs(self, d, target, iso_cutoff=0.05):
         eigs_d = copy.deepcopy(d[target])
         for te_type in ('p', 'n'):
-                for t in eigs_d[te_type]:  # temperatures
-                    for didx, tensor in enumerate(eigs_d[te_type][t]):  # doping idx
-                        eigs = np.linalg.eigh(tensor)[0].tolist()
-                        st = sorted(eigs)
-                        st = [round(e, 2) for e in st]
-                        if [st[0],st[1],st[2]] == [0, 0, 0]:
-                            isotropic = True
-                        else:
-                            isotropic = all([st[0],st[1],st[2]]) and (abs((st[1]-st[0])/st[1]) <= iso_cutoff) and (abs((st[2]-st[0]))/st[2] <= iso_cutoff) and (abs((st[2]-st[1])/st[2]) <= iso_cutoff)
-                        eigs_d[te_type][t][didx] = {'eigs': eigs, 'isotropic': isotropic}
+            for t in eigs_d[te_type]:  # temperatures
+                for didx, tensor in enumerate(eigs_d[te_type][t]):  # doping idx
+                    eigs = np.linalg.eigh(tensor)[0].tolist()
+                    st = sorted(eigs)
+                    st = [round(e, 2) for e in st]
+                    if [st[0], st[1], st[2]] == [0, 0, 0]:
+                        isotropic = True
+                    else:
+                        isotropic = all([st[0], st[1], st[2]]) and (abs((st[1] - st[0]) / st[1]) <= iso_cutoff) and (
+                            abs((st[2] - st[0])) / st[2] <= iso_cutoff) and (abs((st[2] - st[1]) / st[2]) <= iso_cutoff)
+                    eigs_d[te_type][t][didx] = {'eigs': eigs, 'isotropic': isotropic}
 
         return eigs_d
 
-
     def get_extreme(self, d, target, maximize=True, iso_cutoff=0.05, max_didx=None):
-            """
+        """
 
-            :param d: data dictionary
-            :param target: root key of target property, e.g. 'seebeck_doping'
-            :param maximize: (bool) max if True, min if False
-            :param iso_cutoff: percent cutoff for isotropicity
-            :param max_didx: max doping idx
-            :return:
-            """
+        :param d: data dictionary
+        :param target: root key of target property, e.g. 'seebeck_doping'
+        :param maximize: (bool) max if True, min if False
+        :param iso_cutoff: percent cutoff for isotropicity
+        :param max_didx: max doping idx
+        :return:
+        """
+        max_val = None
+        max_temp = None
+        max_dope = None
+        max_mu = None
+        isotropic = None
+        data = {}
+
+        for te_type in ('p', 'n'):
+            for t in d[target][te_type]:  # temperatures
+                for didx, evs in enumerate(d[target][te_type][t]):  # doping idx
+                    if not max_didx or didx <= max_didx:
+                        for val in evs['eigs']:
+                            if (val > max_val and maximize) or (val < max_val and not maximize) or max_val is None:
+                                max_val = val
+                                max_temp = float(t)
+                                max_dope = d['doping'][te_type][didx]
+                                max_mu = d['mu_doping'][te_type][str(t)][didx]
+
+                            isotropic = evs['isotropic']
+            data[te_type] = {'value': max_val, 'temperature': max_temp,
+                             'doping': max_dope, 'mu': max_mu, 'isotropic': isotropic}
             max_val = None
-            max_temp = None
-            max_dope = None
-            max_mu = None
-            isotropic = None
-            data = {}
 
-            for te_type in ('p', 'n'):
-                for t in d[target][te_type]:  # temperatures
-                    for didx, evs in enumerate(d[target][te_type][t]):  # doping idx
-                        if not max_didx or didx <= max_didx:
-                            for val in evs['eigs']:
-                                if (val > max_val and maximize) or (val < max_val and not maximize) or max_val is None:
-                                    max_val = val
-                                    max_temp = float(t)
-                                    max_dope = d['doping'][te_type][didx]
-                                    max_mu = d['mu_doping'][te_type][str(t)][didx]
+        if maximize:
+            max_type = 'p' if data['p']['value'] >= data['n']['value'] else 'n'
+        else:
+            max_type = 'p' if data['p']['value'] <= data['n']['value'] else 'n'
 
-                                isotropic = evs['isotropic']
-                data[te_type] = {'value': max_val, 'temperature': max_temp, 'doping': max_dope, 'mu': max_mu, 'isotropic': isotropic}
-                max_val = None
-
-            if maximize:
-                max_type = 'p' if data['p']['value'] >= data['n']['value'] else 'n'
-            else:
-                max_type = 'p' if data['p']['value'] <= data['n']['value'] else 'n'
-
-            data['best'] = data[max_type]
-            data['best']['type'] = max_type
-            return data
+        data['best'] = data[max_type]
+        data['best']['type'] = max_type
+        return data
 
     def run_task(self, fw_spec):
         # import here to prevent import errors in bigger MPCollab
@@ -131,8 +132,7 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
         bs = vr.get_band_structure(kpoints_filename=kpoints_loc)
         """
         filename = get_slug(
-            'JOB--' + fw_spec['mpsnl'].structure.composition.reduced_formula + '--'
-            + fw_spec['task_type'])
+            'JOB--' + fw_spec['mpsnl'].structure.composition.reduced_formula + '--' + fw_spec['task_type'])
         with open(filename, 'w+') as f:
             f.write('')
 
@@ -148,7 +148,8 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             tdb = connection[creds['database']]
             tdb.authenticate(creds['admin_user'], creds['admin_password'])
 
-            props = {"calculations": 1, "task_id": 1, "state": 1, "pseudo_potential": 1, "run_type": 1, "is_hubbard": 1, "hubbards": 1, "unit_cell_formula": 1}
+            props = {"calculations": 1, "task_id": 1, "state": 1, "pseudo_potential": 1,
+                     "run_type": 1, "is_hubbard": 1, "hubbards": 1, "unit_cell_formula": 1}
             m_task = tdb.tasks.find_one({"dir_name": block_part}, props)
             if not m_task:
                 time.sleep(60)  # only thing to think of is wait for DB insertion(?)
@@ -172,7 +173,11 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
 
             # run Boltztrap
             runner = BoltztrapRunner(bs, nelect)
-            dir = runner.run(path_dir=os.getcwd())
+            try:
+                dir = runner.run(path_dir=os.getcwd())
+            except BoltztrapError as e:
+                if "factorization" in e.msg:
+                    dir = BoltztrapRunner(bs, nelect, run_type="BANDS").run(path_dir=os.getcwd(), clear_dir=True)
 
             # put the data in the database
             bta = BoltztrapAnalyzer.from_files(dir)
@@ -233,21 +238,27 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             ted['kappa_best_dope19'] = self.get_extreme(ted, 'kappa_eigs', maximize=False, max_didx=4)
 
             try:
-	        from mpcollab.thermoelectrics.boltztrap_TE import BoltzSPB
+                from mpcollab.thermoelectrics.boltztrap_TE import BoltzSPB
                 bzspb = BoltzSPB(ted)
-                maxpf_p = bzspb.get_maximum_power_factor('p', temperature=0, tau=1E-14, ZT=False, kappal=0.5,\
-                    otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig', \
-                                                    'get_thermal_conductivity_mu_eig', 'get_average_eff_mass_tensor_mu'))
+                maxpf_p = bzspb.get_maximum_power_factor('p', temperature=0, tau=1E-14, ZT=False, kappal=0.5,
+                                                         otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig',
+                                                                     'get_thermal_conductivity_mu_eig',
+                                                                     'get_average_eff_mass_tensor_mu'))
 
-                maxpf_n = bzspb.get_maximum_power_factor('n', temperature=0, tau=1E-14, ZT=False, kappal=0.5,\
-                    otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig', \
-                                                    'get_thermal_conductivity_mu_eig', 'get_average_eff_mass_tensor_mu'))
+                maxpf_n = bzspb.get_maximum_power_factor('n', temperature=0, tau=1E-14, ZT=False, kappal=0.5,
+                                                         otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig',
+                                                                     'get_thermal_conductivity_mu_eig',
+                                                                     'get_average_eff_mass_tensor_mu'))
 
-                maxzt_p = bzspb.get_maximum_power_factor('p', temperature=0, tau=1E-14, ZT=True, kappal=0.5, otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig', \
-                                                    'get_thermal_conductivity_mu_eig', 'get_average_eff_mass_tensor_mu'))
+                maxzt_p = bzspb.get_maximum_power_factor('p', temperature=0, tau=1E-14, ZT=True, kappal=0.5,
+                                                         otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig',
+                                                                     'get_thermal_conductivity_mu_eig',
+                                                                     'get_average_eff_mass_tensor_mu'))
 
-                maxzt_n = bzspb.get_maximum_power_factor('n', temperature=0, tau=1E-14, ZT=True, kappal=0.5, otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig', \
-                                                    'get_thermal_conductivity_mu_eig', 'get_average_eff_mass_tensor_mu'))
+                maxzt_n = bzspb.get_maximum_power_factor('n', temperature=0, tau=1E-14, ZT=True, kappal=0.5,
+                                                         otherprops=('get_seebeck_mu_eig', 'get_conductivity_mu_eig',
+                                                                     'get_thermal_conductivity_mu_eig',
+                                                                     'get_average_eff_mass_tensor_mu'))
 
                 ted['zt_best_finemesh'] = {'p': maxzt_p, 'n': maxzt_n}
                 ted['pf_best_finemesh'] = {'p': maxpf_p, 'n': maxpf_n}
@@ -263,9 +274,9 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
                 labels = m_task["pseudo_potential"]["labels"]
                 symbols = ["{} {}".format(func, label) for label in labels]
                 parameters = {"run_type": m_task["run_type"],
-                          "is_hubbard": m_task["is_hubbard"],
-                          "hubbards": m_task["hubbards"],
-                          "potcar_symbols": symbols}
+                              "is_hubbard": m_task["is_hubbard"],
+                              "hubbards": m_task["hubbards"],
+                              "potcar_symbols": symbols}
                 entry = ComputedEntry(Composition(m_task["unit_cell_formula"]),
                                       0.0, 0.0, parameters=parameters,
                                       entry_id=m_task["task_id"])
@@ -279,10 +290,10 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             tdb.boltztrap.insert(jsanitize(ted))
 
             update_spec = {'prev_vasp_dir': fw_spec['prev_vasp_dir'],
-                       'boltztrap_dir': os.getcwd(),
-                       'prev_task_type': fw_spec['task_type'],
-                       'mpsnl': fw_spec['mpsnl'].as_dict(),
-                       'snlgroup_id': fw_spec['snlgroup_id'],
-                       'run_tags': fw_spec['run_tags'], 'parameters': fw_spec.get('parameters')}
+                           'boltztrap_dir': os.getcwd(),
+                           'prev_task_type': fw_spec['task_type'],
+                           'mpsnl': fw_spec['mpsnl'].as_dict(),
+                           'snlgroup_id': fw_spec['snlgroup_id'],
+                           'run_tags': fw_spec['run_tags'], 'parameters': fw_spec.get('parameters')}
 
         return FWAction(update_spec=update_spec)
