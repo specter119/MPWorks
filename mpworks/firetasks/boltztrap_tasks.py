@@ -173,11 +173,7 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
 
             # run Boltztrap
             runner = BoltztrapRunner(bs, nelect)
-            try:
-                dir = runner.run(path_dir=os.getcwd())
-            except BoltztrapError as e:
-                if "factorization" in e.msg:
-                    dir = BoltztrapRunner(bs, nelect, run_type="BANDS").run(path_dir=os.getcwd(), clear_dir=True)
+            dir = runner.run(path_dir=os.getcwd())
 
             # put the data in the database
             bta = BoltztrapAnalyzer.from_files(dir)
