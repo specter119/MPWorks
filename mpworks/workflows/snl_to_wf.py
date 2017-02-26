@@ -29,15 +29,14 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
     parameters['boltztrap'] = parameters.get('boltztrap', True)  # by default run boltztrap
     spec = {'parameters': parameters}
 
-    incar_enforce = {'NPAR': 2}
+    incar_enforce = {'NPAR': 2, 'NCORE': 8}
     if 'exact_structure' in parameters and parameters['exact_structure']:
         structure = snl.structure
     else:
         structure = snl.structure.get_primitive_structure()
     if enforce_gga:
-        incar_enforce.update({"LDAU" : False})
-    mpvis = MPRelaxSet(snl.structure,
-                       user_incar_settings=incar_enforce)
+        incar_enforce.update({"LDAU": False})
+    mpvis = MPRelaxSet(structure, user_incar_settings=incar_enforce)
 
     incar = mpvis.incar
     poscar = mpvis.poscar
@@ -65,7 +64,8 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
         del spec['parameters']['run_tags']
 
     # add exact structure run tag automatically if we have a unique situation
-    if 'exact_structure' in parameters and parameters['exact_structure'] and snl.structure != snl.structure.get_primitive_structure():
+    if 'exact_structure' in parameters and parameters['exact_structure'] and \
+            structure != snl.structure.get_primitive_structure():
         spec['run_tags'].extend('exact_structure')
 
     spec['_dupefinder'] = DupeFinderVasp().to_dict()
@@ -74,6 +74,7 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
         'incar'].get('LDAU', False) else 'GGA optimize structure (2x)'
 
     return spec
+
 
 def snl_to_wf(snl, parameters=None):
     fws = []
@@ -118,8 +119,8 @@ def snl_to_wf(snl, parameters=None):
     fws.append(Firework(tasks, spec, name=get_slug(f + '--' + spec['task_type']), fw_id=1))
 
     # insert into DB - GGA structure optimization
-    spec = {'task_type': 'VASP db insertion', '_priority': priority*2,
-            '_allow_fizzled_parents': True, '_queueadapter': QA_DB, 
+    spec = {'task_type': 'VASP db insertion', '_priority': priority * 2,
+            '_allow_fizzled_parents': True, '_queueadapter': QA_DB,
             "_dupefinder": DupeFinderDB().to_dict(), '_trackers': trackers_db}
     fws.append(Firework([VaspToDBTask()], spec, fw_id=2,
                         name=get_slug(f + '--' + spec['task_type'])))
@@ -130,8 +131,8 @@ def snl_to_wf(snl, parameters=None):
     ggau_compound = ('LDAU' in incar and incar['LDAU'])
 
     if not parameters.get('skip_bandstructure', False) and \
-      (not ggau_compound or parameters.get('force_gga_bandstructure', False)):
-        spec = {'task_type': 'Controller: add Electronic Structure v2', 
+            (not ggau_compound or parameters.get('force_gga_bandstructure', False)):
+        spec = {'task_type': 'Controller: add Electronic Structure v2',
                 '_priority': priority, '_queueadapter': QA_CONTROL}
         fws.append(Firework([AddEStructureTask()], spec, fw_id=3,
                             name=get_slug(f + '--' + spec['task_type'])))
@@ -149,16 +150,16 @@ def snl_to_wf(snl, parameters=None):
         connections[2].append(10)
 
         spec = {'task_type': 'VASP db insertion', '_queueadapter': QA_DB,
-                '_allow_fizzled_parents': True, '_priority': priority, 
-                "_dupefinder": DupeFinderDB().to_dict(), 
+                '_allow_fizzled_parents': True, '_priority': priority,
+                "_dupefinder": DupeFinderDB().to_dict(),
                 '_trackers': trackers_db}
         fws.append(
-            Firework([VaspToDBTask()], spec, 
+            Firework([VaspToDBTask()], spec,
                      name=get_slug(f + '--' + spec['task_type']), fw_id=11))
         connections[10] = [11]
 
         if not parameters.get('skip_bandstructure', False):
-            spec = {'task_type': 'Controller: add Electronic Structure v2', 
+            spec = {'task_type': 'Controller: add Electronic Structure v2',
                     '_priority': priority, '_queueadapter': QA_CONTROL}
             fws.append(
                 Firework([AddEStructureTask()], spec, fw_id=12,

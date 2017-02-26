@@ -38,13 +38,13 @@ class SetupStaticRunTask(FireTaskBase, FWSerializable):
         self.user_incar_settings = parameters.get('user_incar_settings', {})
 
     def run_task(self, fw_spec):
-        self.user_incar_settings.update({"NPAR": 2})
+        self.user_incar_settings.update({"NPAR": 2, "NCORE": 8})
         # Get kpoint density per vol
         vol = Poscar.from_file("POSCAR").structure.volume
         kppra_vol = self.kpoints_density / vol
         new_set = MPStaticSet.from_prev_calc(
             os.getcwd(),
-            user_incar_settings=self.user_incar_settings, 
+            user_incar_settings=self.user_incar_settings,
             reciprocal_density=kppra_vol)
         new_set.write_input('.')
         structure = new_set.structure
@@ -89,7 +89,7 @@ class SetupNonSCFTask(FireTaskBase, FWSerializable):
         self.kpoints_line_density = parameters.get('kpoints_line_density', 20)
 
     def run_task(self, fw_spec):
-        user_incar_settings= {"NPAR": 2}
+        user_incar_settings = {"NPAR": 2, "NCORE": 8}
         vol = Poscar.from_file("POSCAR").structure.volume
         kppra_vol = self.kpoints_density / vol
         if self.line:
@@ -135,7 +135,6 @@ class SetupGGAUTask(FireTaskBase, FWSerializable):
                 incar_updates[k] = ggau_incar[k]
 
         incar.update(incar_updates)  # override the +U keys
-
 
         # start from the CHGCAR of previous run
         if os.path.exists('CHGCAR'):
