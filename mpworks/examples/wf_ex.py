@@ -34,7 +34,7 @@ def structure_to_wf(structure):
     connections = defaultdict(list)  # dependencies between FireWorks
 
     # generate VASP input objects for 1st VASP run - this is put in the FW spec
-    mpvis = MPRelaxSet(structure, user_incar_settings={'NPAR': 2, 
+    mpvis = MPRelaxSet(structure, user_incar_settings={'NCORE': 8,
                                                        "GGAU":False})
     incar = mpvis.incar
     poscar = mpvis.poscar

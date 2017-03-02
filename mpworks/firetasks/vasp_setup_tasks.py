@@ -38,7 +38,7 @@ class SetupStaticRunTask(FireTaskBase, FWSerializable):
         self.user_incar_settings = parameters.get('user_incar_settings', {})
 
     def run_task(self, fw_spec):
-        self.user_incar_settings.update({"NPAR": 2, "NCORE": 8})
+        self.user_incar_settings.update({"NCORE": 8})
         # Get kpoint density per vol
         vol = Poscar.from_file("POSCAR").structure.volume
         kppra_vol = self.kpoints_density / vol
@@ -89,7 +89,7 @@ class SetupNonSCFTask(FireTaskBase, FWSerializable):
         self.kpoints_line_density = parameters.get('kpoints_line_density', 20)
 
     def run_task(self, fw_spec):
-        user_incar_settings = {"NPAR": 2, "NCORE": 8}
+        user_incar_settings = {"NCORE": 8}
         vol = Poscar.from_file("POSCAR").structure.volume
         kppra_vol = self.kpoints_density / vol
         if self.line:

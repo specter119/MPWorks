@@ -29,7 +29,7 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
     parameters['boltztrap'] = parameters.get('boltztrap', True)  # by default run boltztrap
     spec = {'parameters': parameters}
 
-    incar_enforce = {'NPAR': 2, 'NCORE': 8}
+    incar_enforce = {'NCORE': 8}
     if 'exact_structure' in parameters and parameters['exact_structure']:
         structure = snl.structure
     else:

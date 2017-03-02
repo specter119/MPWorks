@@ -30,7 +30,7 @@ from pymatgen.io.vasp.inputs import Poscar, Kpoints
 
 def update_spec_force_convergence(spec, user_vasp_settings=None):
     fw_spec = spec
-    update_set = {"ENCUT": 700, "EDIFF": 0.000001, "ALGO":"N", "NPAR":2}
+    update_set = {"ENCUT": 700, "EDIFF": 0.000001, "ALGO":"N", "NCORE":8}
     if user_vasp_settings and user_vasp_settings.get("incar"):
             update_set.update(user_vasp_settings["incar"])
     fw_spec['vasp']['incar'].update(update_set)
@@ -53,7 +53,7 @@ class SetupFConvergenceTask(FireTaskBase, FWSerializable):
         incar.update(update_set)
         #if fw_spec['double_kmesh']:
         kpoints = fw_spec['vasp']['kpoints']
-        k = [int(round(2.5*k)) if int(round(2.5*k))%2 
+        k = [int(round(2.5*k)) if int(round(2.5*k))%2
              else int(round(2.5*k))+1 for k in kpoints['kpoints'][0]]
         kpoints['kpoints'] = [k]
         return FWAction()
@@ -81,23 +81,23 @@ class SetupDeformedStructTask(FireTaskBase, FWSerializable):
             fws=[]
             connections={}
             f = Composition(d_struct.formula).alphabetical_formula
-            snl = StructureNL(d_struct, 'Joseph Montoya <montoyjh@lbl.gov>', 
+            snl = StructureNL(d_struct, 'Joseph Montoya <montoyjh@lbl.gov>',
                               projects=["Elasticity"])
             tasks = [AddSNLTask()]
             snl_priority = fw_spec.get('priority', 1)
-            spec = {'task_type': 'Add Deformed Struct to SNL database', 
-                    'snl': snl.as_dict(), 
-                    '_queueadapter': QA_DB, 
+            spec = {'task_type': 'Add Deformed Struct to SNL database',
+                    'snl': snl.as_dict(),
+                    '_queueadapter': QA_DB,
                     '_priority': snl_priority}
             if 'snlgroup_id' in fw_spec and isinstance(snl, MPStructureNL):
                 spec['force_mpsnl'] = snl.as_dict()
                 spec['force_snlgroup_id'] = fw_spec['snlgroup_id']
                 del spec['snl']
-            fws.append(Firework(tasks, spec, 
-                                name=get_slug(f + '--' + spec['task_type']), 
+            fws.append(Firework(tasks, spec,
+                                name=get_slug(f + '--' + spec['task_type']),
                                 fw_id=-1000+i*10))
             connections[-1000+i*10] = [-999+i*10]
-            spec = snl_to_wf._snl_to_spec(snl, 
+            spec = snl_to_wf._snl_to_spec(snl,
                                           parameters={'exact_structure':True})
             spec = update_spec_force_convergence(spec)
             spec['deformation_matrix'] = d_struct_set.deformations[i].tolist()
@@ -107,19 +107,19 @@ class SetupDeformedStructTask(FireTaskBase, FWSerializable):
             del spec['_dupefinder']
             spec['task_type'] = "Optimize deformed structure"
             fws.append(Firework([VaspWriterTask(), SetupElastConstTask(),
-                                 get_custodian_task(spec)], 
-                                spec, 
-                                name=get_slug(f + '--' + spec['task_type']), 
+                                 get_custodian_task(spec)],
+                                spec,
+                                name=get_slug(f + '--' + spec['task_type']),
                                 fw_id=-999+i*10))
-            
+
             priority = fw_spec['_priority']*3
-            spec = {'task_type': 'VASP db insertion', 
+            spec = {'task_type': 'VASP db insertion',
                     '_priority': priority,
-                    '_allow_fizzled_parents': True, 
-                    '_queueadapter': QA_DB, 
-                    'elastic_constant':"deformed_structure", 
+                    '_allow_fizzled_parents': True,
+                    '_queueadapter': QA_DB,
+                    'elastic_constant':"deformed_structure",
                     'clean_task_doc':True,
-                    'deformation_matrix':d_struct_set.deformations[i].tolist(), 
+                    'deformation_matrix':d_struct_set.deformations[i].tolist(),
                     'original_task_id':fw_spec["task_id"]}
             fws.append(Firework([VaspToDBTask(), AddElasticDataToDBTask()], spec,
                                 name=get_slug(f + '--' + spec['task_type']),
@@ -144,7 +144,7 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
         tdb.authenticate(db_creds['admin_user'], db_creds['admin_password'])
         tasks = tdb[db_creds['collection']]
         elasticity = tdb['elasticity']
-        ndocs = tasks.find({"original_task_id": i, 
+        ndocs = tasks.find({"original_task_id": i,
                             "state":"successful"}).count()
         existing_doc = elasticity.find_one({"relaxation_task_id" : i})
         if existing_doc:
@@ -161,7 +161,7 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
         # Get stress from deformed structure
         d["deformation_tasks"] = {}
         ss_dict = {}
-        for k in tasks.find({"original_task_id": i}, 
+        for k in tasks.find({"original_task_id": i},
                             {"deformation_matrix":1,
                              "calculations.output":1,
                              "state":1, "task_id":1}):
@@ -170,7 +170,7 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
             delta = Decimal((defo - np.eye(3))[d_ind][0])
             # Normal deformation
             if d_ind[0] == d_ind[1]:
-                dtype = "_".join(["d", str(d_ind[0][0]), 
+                dtype = "_".join(["d", str(d_ind[0][0]),
                                   "{:.0e}".format(delta)])
             # Shear deformation
             else:
@@ -221,15 +221,15 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
             d["analysis"]["is_conventional"] = False
         """
         d["spacegroup"]=o.get("spacegroup", "Unknown")
-        
+
         if ndocs >= 20:
             # Perform Elastic tensor fitting and analysis
             result = ElasticTensor.from_stress_dict(ss_dict)
             d["elastic_tensor"] = result.voigt.tolist()
             kg_average = result.kg_average
-            d.update({"K_Voigt":kg_average[0], "G_Voigt":kg_average[1], 
-                      "K_Reuss":kg_average[2], "G_Reuss":kg_average[3], 
-                      "K_Voigt_Reuss_Hill":kg_average[4], 
+            d.update({"K_Voigt":kg_average[0], "G_Voigt":kg_average[1],
+                      "K_Reuss":kg_average[2], "G_Reuss":kg_average[3],
+                      "K_Voigt_Reuss_Hill":kg_average[4],
                       "G_Voigt_Reuss_Hill":kg_average[5]})
             d["universal_anisotropy"] = result.universal_anisotropy
             d["homogeneous_poisson"] = result.homogeneous_poisson
@@ -252,9 +252,9 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
             c23 = symm_t.voigt[1][2]
             d["analysis"]["c11_c12"]= not (abs((c11-c12)/c11) < 0.05
                                            or c11 < c12)
-            d["analysis"]["c11_c13"]= not (abs((c11-c13)/c11) < 0.05 
+            d["analysis"]["c11_c13"]= not (abs((c11-c13)/c11) < 0.05
                                            or c11 < c13)
-            d["analysis"]["c11_c23"]= not (abs((c11-c23)/c11) < 0.1 
+            d["analysis"]["c11_c23"]= not (abs((c11-c23)/c11) < 0.1
                                            or c11 < c23)
             d["analysis"]["K_R"] = not (d["K_Reuss"] < 2)
             d["analysis"]["G_R"] = not (d["G_Reuss"] < 2)
@@ -335,6 +335,6 @@ class AddElasticDataToDBTask(FireTaskBase, FWSerializable):
             d["state"] = "successful"
         else:
             d["state"] = "filter_failed"
-        elasticity.update({"relaxation_task_id": d["relaxation_task_id"]}, 
+        elasticity.update({"relaxation_task_id": d["relaxation_task_id"]},
                            d, upsert=True)
         return FWAction()
