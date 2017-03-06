@@ -26,7 +26,8 @@ __date__ = 'Mar 15, 2013'
 def _snl_to_spec(snl, enforce_gga=False, parameters=None):
 
     parameters = parameters if parameters else {}
-    parameters['boltztrap'] = parameters.get('boltztrap', True)  # by default run boltztrap
+    parameters['boltztrap'] = parameters.get('boltztrap', True)         # by default run boltztrap
+    parameters['force_gamma'] = parameters.get('force_gamma', False)    # by default not force gamma
     spec = {'parameters': parameters}
 
     incar_enforce = {'NCORE': 8}
@@ -36,7 +37,8 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
         structure = snl.structure.get_primitive_structure()
     if enforce_gga:
         incar_enforce.update({"LDAU": False})
-    mpvis = MPRelaxSet(structure, user_incar_settings=incar_enforce)
+    mpvis = MPRelaxSet(structure, user_incar_settings=incar_enforce,
+                       force_gamma=parameters['force_gamma'])
 
     incar = mpvis.incar
     poscar = mpvis.poscar
