@@ -26,12 +26,13 @@ __date__ = 'Mar 15, 2013'
 def _snl_to_spec(snl, enforce_gga=False, parameters=None):
 
     parameters = parameters if parameters else {}
-    parameters['boltztrap'] = parameters.get('boltztrap', True)         # by default run boltztrap
-    parameters['force_gamma'] = parameters.get('force_gamma', False)    # by default not force gamma
+    parameters.setdefault('boltztrap', True)        # by default run boltztrap
+    parameters.setdefault('force_gamma', False)      # by default not force gamma
+    parameters.setdefault('exact_structure', True)
     spec = {'parameters': parameters}
 
     incar_enforce = {'NCORE': 8}
-    if 'exact_structure' in parameters and parameters['exact_structure']:
+    if parameters['exact_structure']:
         structure = snl.structure
     else:
         structure = snl.structure.get_primitive_structure()
@@ -81,7 +82,7 @@ def _snl_to_spec(snl, enforce_gga=False, parameters=None):
 def snl_to_wf(snl, parameters=None):
     fws = []
     connections = defaultdict(list)
-    parameters = parameters if parameters else {}
+    parameters = parameters or {}
 
     snl_priority = parameters.get('priority', 1)
     priority = snl_priority * 2  # once we start a job, keep going!

@@ -9,7 +9,7 @@ __date__ = 'May 10, 2013'
 # nodes configuration will be ignored on SLURM due to different naming convention (nnodes vs nodes)
 QA_VASP = {'nnodes': 2, 'nodes': 2, 'walltime': '48:00:00'}
 QA_VASP_SMALL = {'nnodes': 2, 'nodes': 2, 'walltime': '48:00:00'}  # small walltime jobs
-QA_DB = {'nnodes': 1, 'nodes' : 1, 'walltime': '2:00:00'}
+QA_DB = {'nnodes': 1, 'nodes': 1, 'walltime': '2:00:00', "ntasks_per_node": 1}
 QA_CONTROL = {'nnodes': 1, 'nodes': 1, 'walltime': '00:30:00'}
 
 MOVE_TO_GARDEN_DEV = False
@@ -17,7 +17,7 @@ MOVE_TO_GARDEN_PROD = False
 
 GARDEN = '/project/projectdirs/matgen/garden'
 
-RUN_LOCS = [GARDEN, GARDEN+'/dev',
+RUN_LOCS = [GARDEN, GARDEN + '/dev',
             '/project/projectdirs/matgen/garden/control_blocks',
             '/project/projectdirs/matgen/scratch',
             '/global/scratch/sd/matcomp/', '/global/homes/m/matcomp',
