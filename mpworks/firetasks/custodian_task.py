@@ -132,7 +132,7 @@ class VaspCustodianTask(FireTaskBase, FWSerializable):
 
         c = Custodian(self.handlers, self.jobs, max_errors=self.max_errors, gzipped_output=False,
                       validators=[VasprunXMLValidator()],
-                      terminate_func=terminate_func)  # manual gzip
+                      terminate_func=terminate_func, terminate_on_nonzero_returncode=False)  # manual gzip
         custodian_out = c.run()
 
         if self.gzip_output:
