@@ -40,13 +40,13 @@ class SetupStaticRunTask(FireTaskBase, FWSerializable):
 
     def run_task(self, fw_spec):
         self.user_incar_settings.update({"NCORE": 8})
-        # Get kpoint density per vol
-        vol = Poscar.from_file("POSCAR").structure.volume
-        kppra_vol = self.kpoints_density / vol
+        # # Get kpoint density per vol (makes no sense)
+        # vol = Poscar.from_file("POSCAR").structure.volume
+        # kppra_vol = self.kpoints_density / vol
         new_set = MPStaticSet.from_prev_calc(
             os.getcwd(),
-            user_incar_settings=self.user_incar_settings,
-            reciprocal_density=kppra_vol)
+            user_incar_settings=self.user_incar_settings)
+        # , reciprocal_density=kppra_vol) # use default reciprocal_density (100)
         new_set.write_input('.')
         structure = new_set.structure
         sga = SpacegroupAnalyzer(structure, 0.1)
@@ -93,7 +93,6 @@ class SetupNonSCFTask(FireTaskBase, FWSerializable):
         user_incar_settings = {"NCORE": 8}
         # vol = Poscar.from_file("POSCAR").structure.volume
         # kppra_vol = self.kpoints_density / vol
-        kppra_vol = 1000
         if self.line:
             MPNonSCFSet.from_prev_calc(
                 os.getcwd(), mode="Line", copy_chgcar=False,
@@ -107,7 +106,7 @@ class SetupNonSCFTask(FireTaskBase, FWSerializable):
             MPNonSCFSet.from_prev_calc(
                 os.getcwd(), mode="Uniform", copy_chgcar=False,
                 user_incar_settings=user_incar_settings,
-                reciprocal_density=kppra_vol).write_input('.')
+                reciprocal_density=self.kpoints_density).write_input('.')
             return FWAction()
 
 

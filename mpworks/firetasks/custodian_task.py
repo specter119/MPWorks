@@ -1,6 +1,6 @@
 from gzip import GzipFile
 import logging
-import socket
+# import socket
 
 from fireworks.fw_config import FWData
 from monty.os.path import which
