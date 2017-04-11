@@ -41,7 +41,7 @@ def is_valid_vasp_dir(mydir):
     files = ["OUTCAR", "POSCAR", "INCAR", "KPOINTS"]
     for f in files:
         m_file = os.path.join(mydir, f)
-        if not os.path.exists(zpath(m_file)) or not(os.stat(m_file).st_size > 0 or os.stat(m_file+'.gz').st_size > 0):
+        if not os.path.exists(zpath(m_file)) or not(os.stat(m_file).st_size > 0 or os.stat(m_file + '.gz').st_size > 0):
             return False
     return True
 
@@ -102,37 +102,37 @@ class MPVaspDrone(VaspToDbTaskDrone):
                         d["task_id"] = "mp-{}".format(
                             db.counter.find_one_and_update(
                                 {"_id": "taskid"}, {"$inc": {"c": 1}}
-			    )["c"])
+                            )["c"])
                     logger.info("Inserting {} with taskid = {}"
-                    .format(d["dir_name"], d["task_id"]))
+                                .format(d["dir_name"], d["task_id"]))
                 elif self.update_duplicates:
                     d["task_id"] = result["task_id"]
                     logger.info("Updating {} with taskid = {}"
-                    .format(d["dir_name"], d["task_id"]))
+                                .format(d["dir_name"], d["task_id"]))
 
-                #Fireworks processing
+                # Fireworks processing
 
                 self.process_fw(path, d)
 
                 try:
-                    #Add oxide_type
-                    struct=Structure.from_dict(d["output"]["crystal"])
-                    d["oxide_type"]=oxide_type(struct)
+                    # Add oxide_type
+                    struct = Structure.from_dict(d["output"]["crystal"])
+                    d["oxide_type"] = oxide_type(struct)
                 except:
                     logger.error("can't get oxide_type for {}".format(d["task_id"]))
                     d["oxide_type"] = None
 
-                #Override incorrect outcar subdocs for two step relaxations
+                # Override incorrect outcar subdocs for two step relaxations
                 if "optimize structure" in d['task_type'] and \
-                    os.path.exists(os.path.join(path, "relax2")):
+                        os.path.exists(os.path.join(path, "relax2")):
                     try:
                         run_stats = {}
-                        for i in [1,2]:
-                            o_path = os.path.join(path,"relax"+str(i),"OUTCAR")
-                            o_path = o_path if os.path.exists(o_path) else o_path+".gz"
+                        for i in [1, 2]:
+                            o_path = os.path.join(path, "relax" + str(i), "OUTCAR")
+                            o_path = o_path if os.path.exists(o_path) else o_path + ".gz"
                             outcar = Outcar(o_path)
-                            d["calculations"][i-1]["output"]["outcar"] = outcar.as_dict()
-                            run_stats["relax"+str(i)] = outcar.run_stats
+                            d["calculations"][i - 1]["output"]["outcar"] = outcar.as_dict()
+                            run_stats["relax" + str(i)] = outcar.run_stats
                     except:
                         logger.error("Bad OUTCAR for {}.".format(path))
 
@@ -141,7 +141,7 @@ class MPVaspDrone(VaspToDbTaskDrone):
                         for key in ["Total CPU time used (sec)", "User time (sec)",
                                     "System time (sec)", "Elapsed time (sec)"]:
                             overall_run_stats[key] = sum([v[key]
-                                              for v in run_stats.values()])
+                                                          for v in run_stats.values()])
                         run_stats["overall"] = overall_run_stats
                     except:
                         logger.error("Bad run stats for {}.".format(path))
@@ -156,9 +156,9 @@ class MPVaspDrone(VaspToDbTaskDrone):
                     labels = d["pseudo_potential"]["labels"]
                     symbols = ["{} {}".format(func, label) for label in labels]
                     parameters = {"run_type": d["run_type"],
-                              "is_hubbard": d["is_hubbard"],
-                              "hubbards": d["hubbards"],
-                              "potcar_symbols": symbols}
+                                  "is_hubbard": d["is_hubbard"],
+                                  "hubbards": d["hubbards"],
+                                  "potcar_symbols": symbols}
                     entry = ComputedEntry(Composition(d["unit_cell_formula"]),
                                           0.0, 0.0, parameters=parameters,
                                           entry_id=d["task_id"])
@@ -169,10 +169,10 @@ class MPVaspDrone(VaspToDbTaskDrone):
                     print 'ERROR in getting compatibility'
                     d['is_compatible'] = None
 
-
-                #task_type dependent processing
+                # task_type dependent processing
                 if 'static' in d['task_type']:
-                    launch_doc = launches_coll.find_one({"fw_id": d['fw_id'], "launch_dir": {"$regex": d["dir_name"]}}, {"action.stored_data": 1})
+                    launch_doc = launches_coll.find_one({"fw_id": d['fw_id'], "launch_dir": {
+                                                        "$regex": d["dir_name"]}}, {"action.stored_data": 1})
                     for i in ["conventional_standard_structure", "symmetry_operations",
                               "symmetry_dataset", "refined_structure"]:
                         try:
@@ -180,29 +180,29 @@ class MPVaspDrone(VaspToDbTaskDrone):
                         except:
                             pass
 
-                #parse band structure if necessary
+                # parse band structure if necessary
                 if ('band structure' in d['task_type'] or "Uniform" in d['task_type'])\
-                    and d['state'] == 'successful':
+                        and d['state'] == 'successful':
                     launch_doc = launches_coll.find_one({"fw_id": d['fw_id'], "launch_dir": {"$regex": d["dir_name"]}},
                                                         {"action.stored_data": 1})
                     vasp_run = Vasprun(zpath(os.path.join(path, "vasprun.xml")), parse_projected_eigen=False)
 
                     if 'band structure' in d['task_type']:
                         def string_to_numlist(stringlist):
-                            g=re.search('([0-9\-\.eE]+)\s+([0-9\-\.eE]+)\s+([0-9\-\.eE]+)', stringlist)
-                            return [float(g.group(i)) for i in range(1,4)]
+                            g = re.search('([0-9\-\.eE]+)\s+([0-9\-\.eE]+)\s+([0-9\-\.eE]+)', stringlist)
+                            return [float(g.group(i)) for i in range(1, 4)]
 
                         for i in ["kpath_name", "kpath"]:
                             d['stored_data'][i] = launch_doc['action']['stored_data'][i]
                         kpoints_doc = d['stored_data']['kpath']['kpoints']
                         for i in kpoints_doc:
                             if isinstance(kpoints_doc[i], str):
-                                kpoints_doc[i]=string_to_numlist(kpoints_doc[i])
-                        bs=vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
-                                                       line_mode=True)
+                                kpoints_doc[i] = string_to_numlist(kpoints_doc[i])
+                        bs = vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
+                                                         line_mode=True)
                     else:
-                        bs=vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
-                                                       line_mode=False)
+                        bs = vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
+                                                         line_mode=False)
                     bs_json = json.dumps(bs.as_dict(), cls=MontyEncoder)
                     fs = gridfs.GridFS(db, "band_structure_fs")
                     bs_id = fs.put(bs_json)
@@ -212,11 +212,12 @@ class MPVaspDrone(VaspToDbTaskDrone):
                     gap = bs.get_band_gap()
                     vbm = bs.get_vbm()
                     cbm = bs.get_cbm()
-                    update_doc = {'bandgap': gap['energy'], 'vbm': vbm['energy'], 'cbm': cbm['energy'], 'is_gap_direct': gap['direct']}
+                    update_doc = {'bandgap': gap['energy'], 'vbm': vbm['energy'],
+                                  'cbm': cbm['energy'], 'is_gap_direct': gap['direct']}
                     d['analysis'].update(update_doc)
                     d['calculations'][0]['output'].update(update_doc)
 
-		coll.update_one({"dir_name": d["dir_name"]}, {'$set': d}, upsert=True)
+                coll.update_one({"dir_name": d["dir_name"]}, {'$set': d}, upsert=True)
 
                 return d["task_id"], d
             else:
@@ -226,7 +227,7 @@ class MPVaspDrone(VaspToDbTaskDrone):
         else:
             d["task_id"] = 0
             logger.info("Simulated insert into database for {} with task_id {}"
-            .format(d["dir_name"], d["task_id"]))
+                        .format(d["dir_name"], d["task_id"]))
             return 0, d
 
     def process_fw(self, dir_name, d):
@@ -308,7 +309,7 @@ class MPVaspDrone(VaspToDbTaskDrone):
                 last_relax_dir = os.path.join(dir_name, "relax1")
 
         vasp_signals['last_relax_dir'] = last_relax_dir
-        ## see what error signals are present
+        # see what error signals are present
 
         print "getting signals for dir :{}".format(last_relax_dir)
 
@@ -335,7 +336,7 @@ class MPVaspDrone(VaspToDbTaskDrone):
             root_dir = os.path.dirname(dir_name)  # one level above dir_name
             signals = signals.union(DiskSpaceExceededSignal().detect(root_dir))
 
-        if d.get('output',{}).get('final_energy', None) > 0:
+        if d.get('output', {}).get('final_energy', None) > 0:
             signals.add('POSITIVE_ENERGY')
 
         signals = list(signals)
@@ -353,4 +354,3 @@ class MPVaspDrone(VaspToDbTaskDrone):
 
         d['analysis'] = d.get('analysis', {})
         d['analysis']['errors_MP'] = vasp_signals
-

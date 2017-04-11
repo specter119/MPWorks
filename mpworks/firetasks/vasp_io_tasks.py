@@ -103,8 +103,6 @@ class VaspCopyTask(FireTaskBase, FWSerializable):
                     f.close()
                     os.remove(dest_file)
 
-
-
         return FWAction(stored_data={'copied_files': self.files})
 
 
@@ -123,7 +121,7 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
         self.update(parameters)
 
         self.additional_fields = self.get('additional_fields', {})
-        self.update_duplicates = self.get('update_duplicates', False)  # off so DOS/BS doesn't get entered twice
+        self.update_duplicates = self.get('update_duplicates', True)  # off so DOS/BS doesn't get entered twice
 
     def run_task(self, fw_spec):
         if '_fizzled_parents' in fw_spec and not 'prev_vasp_dir' in fw_spec:
@@ -178,9 +176,9 @@ class VaspToDBTask(FireTaskBase, FWSerializable):
         if d['state'] == 'successful':
             update_spec['analysis'] = d['analysis']
             update_spec['output'] = d['output']
-            update_spec['vasp']={'incar':d['calculations'][-1]['input']['incar'],
-                                 'kpoints':d['calculations'][-1]['input']['kpoints']}
-            update_spec["task_id"]=t_id
+            update_spec['vasp'] = {'incar': d['calculations'][-1]['input']['incar'],
+                                   'kpoints': d['calculations'][-1]['input']['kpoints']}
+            update_spec["task_id"] = t_id
             return FWAction(stored_data=stored_data, update_spec=update_spec)
 
         # not successful - first test to see if UnconvergedHandler is needed
