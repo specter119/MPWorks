@@ -154,6 +154,8 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             if not m_task:
                 time.sleep(60)  # only thing to think of is wait for DB insertion(?)
                 m_task = tdb.tasks.find_one({"dir_name": block_part}, props)
+            else:
+                print("find previous run with block_part {}".format(block_part))
 
             if not m_task:
                 raise ValueError("Could not find task with dir_name: {}".format(block_part))
