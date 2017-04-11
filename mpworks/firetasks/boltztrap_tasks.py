@@ -169,8 +169,8 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             bs_dict['structure'] = m_task['calculations'][0]['output']['crystal']
             bs = BandStructure.from_dict(bs_dict)
             print("find previous run with block_part {}".format(block_part))
-            print('Band Structure found: ', bool(bs))
-            print(bs)
+            print 'Band Structure found:', bool(bs)
+            print(bs.kpoints)
             print("nelect: {}".format(nelect))
 
             # run Boltztrap
