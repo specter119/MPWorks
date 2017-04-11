@@ -154,8 +154,6 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             if not m_task:
                 time.sleep(60)  # only thing to think of is wait for DB insertion(?)
                 m_task = tdb.tasks.find_one({"dir_name": block_part}, props)
-            else:
-                print("find previous run with block_part {}".format(block_part))
 
             if not m_task:
                 raise ValueError("Could not find task with dir_name: {}".format(block_part))
@@ -170,8 +168,10 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             bs_dict = json.loads(fs.get(bs_id).read())
             bs_dict['structure'] = m_task['calculations'][0]['output']['crystal']
             bs = BandStructure.from_dict(bs_dict)
-            print 'Band Structure found:', bool(bs)
-            print nelect
+            print("find previous run with block_part {}".format(block_part))
+            print('Band Structure found: ', bool(bs))
+            print(bs)
+            print("nelect: {}".format(nelect))
 
             # run Boltztrap
             runner = BoltztrapRunner(bs, nelect)
