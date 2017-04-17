@@ -174,7 +174,7 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             print("nelect: {}".format(nelect))
 
             # run Boltztrap
-            runner = BoltztrapRunner(bs, nelect, energy_grid=5e4)
+            runner = BoltztrapRunner(bs, nelect, energy_grid=5e-4)
             dir = runner.run(path_dir=os.getcwd())
 
             # put the data in the database
