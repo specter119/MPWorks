@@ -174,8 +174,9 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
             print("nelect: {}".format(nelect))
 
             # run Boltztrap
-            doping = [1e16, 1e17, 1e18, 1e19, 1e20]
-            doping.extend([1 * d, 2.5 * d, 5 * d, 7.5 * d] for d in doping)
+            doping = []
+            for d in [1e16, 1e17, 1e18, 1e19, 1e20]:
+                doping.extend([1 * d, 2.5 * d, 5 * d, 7.5 * d])
             doping.append(1e21)
             runner = BoltztrapRunner(bs, nelect, doping=doping)
             dir = runner.run(path_dir=os.getcwd())
