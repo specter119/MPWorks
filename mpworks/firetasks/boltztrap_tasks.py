@@ -175,7 +175,7 @@ class BoltztrapRunTask(FireTaskBase, FWSerializable):
 
             # run Boltztrap
             doping = [1e16, 1e17, 1e18, 1e19, 1e20]
-            doping.extend([1 * d, 2.5 * d, 5 * d, 7.5 * d])
+            doping.extend([1 * d, 2.5 * d, 5 * d, 7.5 * d] for d in doping)
             doping.append(1e21)
             runner = BoltztrapRunner(bs, nelect, doping=doping)
             dir = runner.run(path_dir=os.getcwd())
