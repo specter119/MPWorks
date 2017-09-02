@@ -15,7 +15,7 @@ from mpworks.fix_scripts.legacy.mps_to_snl import mps_dict_to_snl
 from mpworks.snl_utils.snl_mongo import SNLMongoAdapter
 from mpworks.workflows.wf_utils import get_block_part
 from pymatgen.core.structure import Structure
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 from pymatgen.serializers.json_coders import MontyEncoder
 
 __author__ = 'Anubhav Jain'

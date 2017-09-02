@@ -2,7 +2,7 @@ import datetime
 import traceback
 from pymongo import MongoClient
 from pymatgen.core.structure import Structure
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

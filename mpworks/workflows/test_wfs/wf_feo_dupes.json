@@ -120,7 +120,7 @@
                         }
                     ], 
                     "@class": "StructureNL", 
-                    "@module": "pymatgen.matproj.snl"
+                    "@module": "pymatgen.util.provenance"
                 }, 
                 "task_type": "Add to SNL database", 
                 "_priority": 1

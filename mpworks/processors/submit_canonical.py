@@ -6,7 +6,7 @@ from fireworks.core.launchpad import LaunchPad
 from mpworks.snl_utils.snl_mongo import SNLMongoAdapter
 from mpworks.submission.submission_mongo import SubmissionMongoAdapter
 from pymatgen import MPRester
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

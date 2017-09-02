@@ -24,7 +24,7 @@ from mpworks.workflows.wf_settings import QA_VASP, QA_DB, MOVE_TO_GARDEN_PROD, M
 from mpworks.workflows.wf_utils import last_relax, get_loc, move_to_garden
 from pymatgen import Composition
 from pymatgen.io.vasp.inputs import Incar, Poscar, Potcar, Kpoints
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

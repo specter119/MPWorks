@@ -2,7 +2,7 @@ import json
 import os
 from fireworks.core.launchpad import LaunchPad
 from mpworks.submission.submission_mongo import SubmissionMongoAdapter
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2014, The Materials Project'

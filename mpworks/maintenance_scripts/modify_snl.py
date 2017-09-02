@@ -6,7 +6,7 @@ from fireworks.core.launchpad import LaunchPad
 from mpworks.snl_utils.mpsnl import MPStructureNL
 from mpworks.snl_utils.snl_mongo import SNLMongoAdapter
 from mpworks.submission.submission_mongo import SubmissionMongoAdapter
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 import datetime
 
 __author__ = 'Anubhav Jain'

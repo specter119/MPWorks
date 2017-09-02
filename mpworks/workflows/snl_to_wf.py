@@ -13,7 +13,7 @@ from mpworks.workflows.wf_settings import QA_DB, QA_VASP, QA_CONTROL
 from pymatgen import Composition
 from pymatgen.io.cif import CifParser
 from pymatgen.io.vasp.sets import MPRelaxSet
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

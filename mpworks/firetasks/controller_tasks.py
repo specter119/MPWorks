@@ -9,7 +9,7 @@ from mpworks.firetasks.vasp_setup_tasks import SetupStaticRunTask, \
     SetupNonSCFTask
 from mpworks.workflows.wf_settings import QA_VASP, QA_DB, QA_VASP_SMALL
 from pymatgen import Composition
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

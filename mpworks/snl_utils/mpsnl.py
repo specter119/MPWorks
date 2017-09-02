@@ -1,7 +1,7 @@
 import datetime
 from pymatgen import Structure, MontyDecoder, Molecule, Composition
 from pymatgen.analysis.structure_matcher import StructureMatcher, ElementComparator, SpeciesComparator
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 
 __author__ = 'Anubhav Jain'
 __copyright__ = 'Copyright 2013, The Materials Project'

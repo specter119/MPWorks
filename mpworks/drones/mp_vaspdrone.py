@@ -20,7 +20,7 @@ from pymatgen import Composition, MontyEncoder
 from pymatgen.core.structure import Structure
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
 from pymatgen.entries.computed_entries import ComputedEntry
-from pymatgen.matproj.snl import StructureNL
+from pymatgen.util.provenance import StructureNL
 from pymatgen.io.vasp.outputs import Vasprun, Outcar
 from pymatgen.analysis.structure_analyzer import oxide_type
 

@@ -763,7 +763,7 @@ Here is some code you can use to submit a custom Structure to the **submissions*
 
     from mpworks.submission.submission_mongo import SubmissionMongoAdapter
     from pymatgen import MPRester
-    from pymatgen.matproj.snl import StructureNL
+    from pymatgen.util.provenance import StructureNL
 
     submissions_file = 'submission_db.yaml'
     sma = SubmissionMongoAdapter.from_file(submissions_file)
