@@ -114,13 +114,13 @@ class MPVaspDrone(VaspToDbTaskDrone):
 
                 self.process_fw(path, d)
 
-                try:
-                    # Add oxide_type
-                    struct = Structure.from_dict(d["output"]["crystal"])
-                    d["oxide_type"] = oxide_type(struct)
-                except:
-                    logger.error("can't get oxide_type for {}".format(d["task_id"]))
-                    d["oxide_type"] = None
+                # try:
+                #     # Add oxide_type
+                #     struct = Structure.from_dict(d["output"]["crystal"])
+                #     d["oxide_type"] = oxide_type(struct)
+                # except:
+                #     logger.error("can't get oxide_type for {}".format(d["task_id"]))
+                #     d["oxide_type"] = None
 
                 # Override incorrect outcar subdocs for two step relaxations
                 if "optimize structure" in d['task_type'] and \
