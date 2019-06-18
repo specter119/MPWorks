@@ -5,6 +5,7 @@ import logging
 import pprint
 import re
 import traceback
+import six
 from monty.io import zopen
 from monty.os.path import zpath
 from pymongo import MongoClient
@@ -185,7 +186,7 @@ class MPVaspDrone(VaspToDbTaskDrone):
                         and d['state'] == 'successful':
                     launch_doc = launches_coll.find_one({"fw_id": d['fw_id'], "launch_dir": {"$regex": d["dir_name"]}},
                                                         {"action.stored_data": 1})
-                    vasp_run = Vasprun(zpath(os.path.join(path, "vasprun.xml")), parse_projected_eigen=False)
+                    vasp_run = Vasprun(zpath(os.path.join(path, "vasprun.xml")), parse_projected_eigen=True)
 
                     if 'band structure' in d['task_type']:
                         def string_to_numlist(stringlist):
@@ -196,10 +197,10 @@ class MPVaspDrone(VaspToDbTaskDrone):
                             d['stored_data'][i] = launch_doc['action']['stored_data'][i]
                         kpoints_doc = d['stored_data']['kpath']['kpoints']
                         for i in kpoints_doc:
-                            if isinstance(kpoints_doc[i], str):
-                                kpoints_doc[i] = string_to_numlist(kpoints_doc[i])
-                        bs = vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
-                                                         line_mode=True)
+                            if isinstance(kpoints_doc[i], six.string_types):
+                                kpoints_doc[i]=string_to_numlist(kpoints_doc[i])
+                        bs=vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
+                                                       line_mode=True)
                     else:
                         bs = vasp_run.get_band_structure(efermi=d['calculations'][0]['output']['outcar']['efermi'],
                                                          line_mode=False)
